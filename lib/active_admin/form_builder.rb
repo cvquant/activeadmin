@@ -4,7 +4,7 @@ module Formtastic
     module Base
       def input_wrapping(&block)
         html = super
-        template.concat(html) if template.output_buffer && template.assigns['has_many_block']
+        template.concat(html) if template.output_buffer && template.assigns[:has_many_block]
         html
       end
     end
@@ -13,6 +13,8 @@ end
 
 module ActiveAdmin
   class FormBuilder < ::Formtastic::FormBuilder
+    include MethodOrProcHelper
+
     self.input_namespaces = [::Object, ::ActiveAdmin::Inputs, ::Formtastic::Inputs]
 
     # TODO: remove both class finders after formtastic 4 (where it will be default)
@@ -34,13 +36,15 @@ module ActiveAdmin
 
     def has_many(assoc, options = {}, &block)
       # remove options that should not render as attributes
-      custom_settings = :new_record, :allow_destroy, :heading, :sortable
+      custom_settings = :new_record, :allow_destroy, :heading, :sortable, :sortable_start
       builder_options = {new_record: true}.merge! options.slice  *custom_settings
       options         = {for: assoc      }.merge! options.except *custom_settings
       options[:class] = [options[:class], "inputs has_many_fields"].compact.join(' ')
+      sortable_column = builder_options[:sortable]
+      sortable_start  = builder_options.fetch(:sortable_start, 0)
 
-      if (column = builder_options[:sortable])
-        options[:for] = [assoc, sorted_children(assoc, column)]
+      if sortable_column
+        options[:for] = [assoc, sorted_children(assoc, sortable_column)]
       end
 
       html = "".html_safe
@@ -51,15 +55,17 @@ module ActiveAdmin
       end
 
       html << template.capture do
-        contents = "".html_safe
         form_block = proc do |has_many_form|
           index    = parent_child_index options[:parent] if options[:parent]
-          block.call has_many_form, index
+          block_contents = template.capture do
+            block.call(has_many_form, index)
+          end
+          template.concat(block_contents)
           template.concat has_many_actions(has_many_form, builder_options, "".html_safe)
         end
-        
-        template.assign('has_many_block'=> true)
-        contents = without_wrapper { inputs(options, &form_block) }
+
+        template.assigns[:has_many_block] = true
+        contents = without_wrapper { inputs(options, &form_block) } || "".html_safe
 
         if builder_options[:new_record]
           contents << js_for_has_many(assoc, form_block, template, builder_options[:new_record], options[:class])
@@ -69,7 +75,7 @@ module ActiveAdmin
       end
 
       tag = @already_in_an_inputs_block ? :li : :div
-      html = template.content_tag(tag, html, class: "has_many_container #{assoc}", 'data-sortable' => builder_options[:sortable])
+      html = template.content_tag(tag, html, class: "has_many_container #{assoc}", 'data-sortable' => sortable_column, 'data-sortable-start' => sortable_start)
       template.concat(html) if template.output_buffer
       html
     end
@@ -81,7 +87,10 @@ module ActiveAdmin
         contents << template.content_tag(:li) do
           template.link_to I18n.t('active_admin.has_many_remove'), "#", class: 'button has_many_remove'
         end
-      elsif builder_options[:allow_destroy]
+      elsif call_method_or_proc_on(has_many_form.object,
+                                   builder_options[:allow_destroy],
+                                   exec: false)
+
         has_many_form.input(:_destroy, as: :boolean,
                             wrapper_html: {class: 'has_many_delete'},
                             label: I18n.t('active_admin.has_many_delete'))
@@ -91,7 +100,7 @@ module ActiveAdmin
         has_many_form.input builder_options[:sortable], as: :hidden
 
         contents << template.content_tag(:li, class: 'handle') do
-          Iconic.icon :move_vertical
+          "MOVE"
         end
       end
 
@@ -134,6 +143,5 @@ module ActiveAdmin
         html: CGI.escapeHTML(html).html_safe, placeholder: placeholder
       }
     end
-
   end
 end

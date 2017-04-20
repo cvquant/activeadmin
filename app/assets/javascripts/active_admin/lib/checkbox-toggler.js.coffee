@@ -1,7 +1,7 @@
 class ActiveAdmin.CheckboxToggler
   constructor: (@options, @container)->
     defaults = {}
-    @options = $.extend defaults, options
+    @options = $.extend defaults, @options
     @_init()
     @_bind()
 
@@ -32,5 +32,13 @@ class ActiveAdmin.CheckboxToggler
     @checkboxes.each (index, el)=>
       $(el).prop checked: setting
       @_didChangeCheckbox(el)
+
+  option: (key, value) ->
+    if $.isPlainObject(key)
+      @options = $.extend(true, @options, key)
+    else if key?
+      @options[key]
+    else
+      @options[key] = value
 
 $.widget.bridge 'checkboxToggler', ActiveAdmin.CheckboxToggler

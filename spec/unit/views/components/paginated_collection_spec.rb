@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-describe ActiveAdmin::Views::PaginatedCollection do
+RSpec.describe ActiveAdmin::Views::PaginatedCollection do
   describe "creating with the dsl" do
 
     before :all do
@@ -62,6 +62,19 @@ describe ActiveAdmin::Views::PaginatedCollection do
 
       it "should customize the page number parameter in pagination links" do
         expect(pagination.children.last.content).to match(/\/admin\/posts\?post_page=2/)
+      end
+    end
+
+    context "when specifying :params option" do
+      let(:collection) do
+        posts = 10.times.map{ Post.new }
+        Kaminari.paginate_array(posts).page(1).per(5)
+      end
+
+      let(:pagination) { paginated_collection(collection, param_name: :post_page, params: { anchor: 'here' }) }
+
+      it "should pass it through to Kaminari" do
+        expect(pagination.children.last.content).to match(/\/admin\/posts\?post_page=2#here/)
       end
     end
 
@@ -198,9 +211,9 @@ describe ActiveAdmin::Views::PaginatedCollection do
       end
 
       describe "set to false" do
-        let(:pagination) { paginated_collection(collection, pagination_total: false) }
-
         it "should not show the total item counts" do
+          expect(collection).not_to receive(:total_pages)
+          pagination = paginated_collection(collection, pagination_total: false)
           info = pagination.find_by_class('pagination_information').first.content.gsub('&nbsp;',' ')
           expect(info).to eq "Displaying posts <b>1 - 30</b>"
         end
@@ -213,6 +226,22 @@ describe ActiveAdmin::Views::PaginatedCollection do
           info = pagination.find_by_class('pagination_information').first.content.gsub('&nbsp;',' ')
           expect(info).to eq "Displaying posts <b>1 - 30</b> of <b>256</b> in total"
         end
+      end
+    end
+
+    context "when specifying per_page: array option" do
+      let(:collection) do
+        posts = 10.times.map { Post.new }
+        Kaminari.paginate_array(posts).page(1).per(5)
+      end
+
+      let(:pagination) { paginated_collection(collection, per_page: [1, 2, 3]) }
+      let(:pagination_html) { pagination.find_by_class("pagination_per_page").first }
+      let(:pagination_node) { Capybara.string(pagination_html.to_s) }
+
+      it "should render per_page select tag" do
+        expect(pagination_html.content).to match(/Per page:/)
+        expect(pagination_node).to have_css("select option", count: 3)
       end
     end
 

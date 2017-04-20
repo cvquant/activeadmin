@@ -1,3 +1,6 @@
+---
+redirect_from: /docs/7-sidebars.html
+---
 # Sidebar Sections
 
 Sidebars allow you to put whatever content you want on the side the page.
@@ -36,6 +39,14 @@ pass it a proc which will be rendered within the view context.
 ```ruby
 sidebar :help, if: proc{ current_admin_user.super_admin? } do
   "Only for super admins!"
+end
+```
+
+You can access your model as resource in the sidebar too:
+
+```ruby
+sidebar :custom, only: :show do
+  resource.a_method
 end
 ```
 

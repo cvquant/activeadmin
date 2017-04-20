@@ -1,10 +1,18 @@
 require 'rails_helper'
 
-describe ActiveAdmin::Resource::BelongsTo do
+RSpec.describe ActiveAdmin::Resource::BelongsTo do
+  before do
+    load_resources do
+      ActiveAdmin.register User
+      ActiveAdmin.register Post do belongs_to :user end
+    end
+  end
 
+  let(:namespace) { ActiveAdmin.application.namespace(:admin) }
   let(:user_config){ ActiveAdmin.register User }
   let(:post_config){ ActiveAdmin.register Post do belongs_to :user end }
   let(:belongs_to){ post_config.belongs_to_config }
+
 
   it "should have an owner" do
     expect(belongs_to.owner).to eq post_config
@@ -24,6 +32,20 @@ describe ActiveAdmin::Resource::BelongsTo do
         expect {
           belongs_to.target
         }.to raise_error(ActiveAdmin::Resource::BelongsTo::TargetNotFound)
+      end
+    end
+
+    context "when the resource is on a namespace" do
+      let(:blog_post_config){ ActiveAdmin.register Blog::Post do; end }
+      let(:belongs_to) { ActiveAdmin::Resource::BelongsTo.new blog_post_config, :blog_author, class_name: "Blog::Author" }
+      before do
+        class Blog::Author
+          include ActiveModel::Naming
+        end
+        @blog_author_config = ActiveAdmin.register Blog::Author do; end
+      end
+      it "should return the target resource" do
+        expect(belongs_to.target).to eq @blog_author_config
       end
     end
   end

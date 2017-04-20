@@ -19,7 +19,7 @@ module ActiveAdmin
         opening_tag << children.to_s << closing_tag
       end
     end
-    
+
     class ActiveAdminForm < FormtasticProxy
       builder_method :active_admin_form_for
 
@@ -27,20 +27,28 @@ module ActiveAdmin
         @resource = resource
         options = options.deep_dup
         options[:builder] ||= ActiveAdmin::FormBuilder
-        form_string = semantic_form_for(resource, options) do |f|
+        form_string = helpers.semantic_form_for(resource, options) do |f|
           @form_builder = f
         end
 
         @opening_tag, @closing_tag = split_string_on(form_string, "</form>")
         instance_eval(&block) if block_given?
+
+        # Rails 4 sets multipart automatically if a file field is present,
+        # but the form tag has already been rendered before the block eval.
+        if multipart? && @opening_tag !~ /multipart/
+          @opening_tag.sub!(/<form/, '<form enctype="multipart/form-data"')
+        end
       end
 
       def inputs(*args, &block)
+        if block_given?
+          form_builder.template.assigns[:has_many_block] = true
+        end
         if block_given? && block.arity == 0
           wrapped_block = proc do
             wrap_it = form_builder.already_in_an_inputs_block ? true : false
             form_builder.already_in_an_inputs_block = true
-            form_builder.template.assign('has_many_block'=> true)
             content = form_builder.template.capture do
               block.call
             end
@@ -72,6 +80,10 @@ module ActiveAdmin
         insert_tag(HasManyProxy, form_builder, *args, &block)
       end
 
+      def multipart?
+        form_builder && form_builder.multipart?
+      end
+
       def object
         form_builder.object
       end
@@ -83,14 +95,15 @@ module ActiveAdmin
 
     class SemanticInputsProxy < FormtasticProxy
       def build(form_builder, *args, &block)
-        options = args.extract_options!
-        legend = args.shift
+        html_options = args.extract_options!
+        html_options[:class] ||= "inputs"
+        legend = args.shift if args.first.is_a?(::String)
+        legend = html_options.delete(:name) if html_options.key?(:name)
         legend_tag = legend ? "<legend><span>#{legend}</span></legend>" : ""
-        klasses = ["inputs"]
-        klasses << options[:class] if options[:class]
-        @opening_tag = "<fieldset class=\"#{klasses.join(" ")}\">#{legend_tag}<ol>"
+        fieldset_attrs = html_options.map {|k,v| %Q{#{k}="#{v}"} }.join(" ")
+        @opening_tag = "<fieldset #{fieldset_attrs}>#{legend_tag}<ol>"
         @closing_tag = "</ol></fieldset>"
-        super(*(args << options), &block)
+        super(*(args << html_options), &block)
       end
     end
 
@@ -104,8 +117,6 @@ module ActiveAdmin
 
     class HasManyProxy < FormtasticProxy
       def build(form_builder, *args, &block)
-        assoc = args[0]
-        builder_options = args[1] || {}
         text_node form_builder.has_many(*args, &block)
       end
     end

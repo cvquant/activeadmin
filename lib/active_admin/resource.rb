@@ -10,6 +10,7 @@ require 'active_admin/resource/includes'
 require 'active_admin/resource/scope_to'
 require 'active_admin/resource/sidebars'
 require 'active_admin/resource/belongs_to'
+require 'active_admin/resource/ordering'
 
 module ActiveAdmin
 
@@ -50,6 +51,9 @@ module ActiveAdmin
     # Set breadcrumb builder
     attr_writer :breadcrumb
 
+    #Set order clause
+    attr_writer :order_clause
+
     # Store a reference to the DSL so that we can dereference it during garbage collection.
     attr_accessor :dsl
 
@@ -82,6 +86,7 @@ module ActiveAdmin
     include ScopeTo
     include Sidebars
     include Routes
+    include Ordering
 
     # The class this resource wraps. If you register the Post model, Resource#resource_class
     # will point to the Post class
@@ -129,6 +134,12 @@ module ActiveAdmin
       @belongs_to
     end
 
+    def belongs_to_param
+      if belongs_to? && belongs_to_config.required?
+        belongs_to_config.to_param
+      end
+    end
+
     # Do we belong to another resource?
     def belongs_to?
       !!belongs_to_config
@@ -143,15 +154,25 @@ module ActiveAdmin
       instance_variable_defined?(:@breadcrumb) ? @breadcrumb : namespace.breadcrumb
     end
 
+    def order_clause
+      @order_clause || namespace.order_clause
+    end
+
     def find_resource(id)
-      resource = resource_class.public_send(method_for_find, id)
-      decorator_class ? decorator_class.new(resource) : resource
+      resource = resource_class.public_send *method_for_find(id)
+      (decorator_class && resource) ? decorator_class.new(resource) : resource
     end
 
     private
 
-    def method_for_find
-      resources_configuration[:self][:finder] || :"find_by_#{resource_class.primary_key}"
+    def method_for_find(id)
+      if finder = resources_configuration[:self][:finder]
+        [finder, id]
+      elsif Rails::VERSION::MAJOR >= 4
+        [:find_by, { resource_class.primary_key => id }]
+      else
+        [:"find_by_#{resource_class.primary_key}", id]
+      end
     end
 
     def default_csv_builder

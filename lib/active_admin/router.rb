@@ -18,13 +18,13 @@ module ActiveAdmin
     end
 
     def define_root_routes(router)
-      router.instance_exec @application.namespaces.values do |namespaces|
+      router.instance_exec @application.namespaces do |namespaces|
         namespaces.each do |namespace|
           if namespace.root?
             root namespace.root_to_options.merge(to: namespace.root_to)
           else
-            namespace namespace.name do
-              root namespace.root_to_options.merge(to: namespace.root_to)
+            namespace namespace.name, namespace.route_options.dup do
+              root namespace.root_to_options.merge(to: namespace.root_to, as: :root)
             end
           end
         end
@@ -34,7 +34,7 @@ module ActiveAdmin
     # Defines the routes for each resource
     def define_resource_routes(router)
       router.instance_exec @application.namespaces, self do |namespaces, aa_router|
-        resources = namespaces.values.flat_map{ |n| n.resources.values }
+        resources = namespaces.flat_map{ |n| n.resources.values }
         resources.each do |config|
           routes = aa_router.resource_routes(config)
 
@@ -57,7 +57,7 @@ module ActiveAdmin
           unless config.namespace.root?
             nested = routes
             routes = Proc.new do
-              namespace config.namespace.name do
+              namespace config.namespace.name, config.namespace.route_options.dup do
                 instance_exec &nested
               end
             end
@@ -94,7 +94,9 @@ module ActiveAdmin
           page = config.underscored_resource_name
           get "/#{page}" => "#{page}#index"
           config.page_actions.each do |action|
-            build_route.call action.http_verb, "/#{page}/#{action.name}" => "#{page}##{action.name}"
+            Array.wrap(action.http_verb).each do |verb|
+              build_route.call verb, "/#{page}/#{action.name}" => "#{page}##{action.name}"
+            end
           end
         else
           raise "Unsupported config class: #{config.class}"

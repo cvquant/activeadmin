@@ -1,7 +1,6 @@
 require 'rails_helper'
 
-include ActiveAdmin
-describe ActiveAdmin::Views::TabbedNavigation do
+RSpec.describe ActiveAdmin::Views::TabbedNavigation do
 
   let(:menu){ ActiveAdmin::Menu.new }
 
@@ -17,6 +16,7 @@ describe ActiveAdmin::Views::TabbedNavigation do
   let(:html) { Capybara.string(tabbed_navigation.to_s) }
 
   before do
+    load_resources { ActiveAdmin.register Post }
     allow(helpers).to receive(:admin_logged_in?).and_return(false)
   end
 
@@ -48,6 +48,8 @@ describe ActiveAdmin::Views::TabbedNavigation do
                        priority: 10,
                        if: :admin_logged_in?
       end
+
+      menu.add label: "Charles Smith", id: "current_user", url: -> { nil }
     end
 
     it "should generate a ul" do
@@ -93,6 +95,13 @@ describe ActiveAdmin::Views::TabbedNavigation do
 
     it "should not generate the management parent menu" do
       expect(html).to_not have_selector("a[href='#']", text: "Management")
+    end
+
+    context "when url is nil" do
+      it "should generate a span" do
+        selector = "li#current_user > span"
+        expect(html).to have_selector(selector, text: "Charles Smith")
+      end
     end
 
     describe "marking current item" do

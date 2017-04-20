@@ -128,7 +128,7 @@ module ActiveAdmin
       config.menu_item_options = options
     end
 
-    # Set the name of the navigation menu to display. This is mainly used in conjuction with the
+    # Set the name of the navigation menu to display. This is mainly used in conjunction with the
     # `#belongs_to` functionality.
     #
     # @param [Symbol] menu_name The name of the menu to display as the global navigation
@@ -163,11 +163,5 @@ module ActiveAdmin
       config.sidebar_sections << ActiveAdmin::SidebarSection.new(name, options, &block)
     end
 
-    def decorate_with(decorator_class)
-      # Force storage as a string. This will help us with reloading issues.
-      # Assuming decorator_class.to_s will return the name of the class allows
-      # us to handle a string or a class.
-      config.decorator_class_name = "::#{ decorator_class }"
-    end
   end
 end

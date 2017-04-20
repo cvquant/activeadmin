@@ -1,6 +1,8 @@
 module ActiveAdmin
   module Dependency
-    DEVISE = '~> 3.2'
+    module Requirements
+      DEVISE = '>= 3.2', '< 5'
+    end
 
     # Provides a clean interface to check for gem dependencies at runtime.
     #
@@ -53,41 +55,114 @@ module ActiveAdmin
       Matcher.new name.to_s
     end
 
+    def self.rails5?
+      rails >= '5.x'
+    end
+
     class Matcher
+      attr_reader :name
+
       def initialize(name)
-        @name, @spec = name, Gem.loaded_specs[name]
+        @name = name
+      end
+
+      def spec
+        @spec ||= Gem.loaded_specs[name]
+      end
+
+      def spec!
+        spec || raise(DependencyError, "To use #{name} you need to specify it in your Gemfile.")
       end
 
       def match?(*reqs)
-        !!@spec && Gem::Requirement.create(reqs).satisfied_by?(@spec.version)
+        !!spec && Gem::Requirement.create(reqs).satisfied_by?(spec.version)
       end
 
       def match!(*reqs)
-        unless @spec
-          raise DependencyError, "To use #{@name} you need to specify it in your Gemfile."
-        end
-
         unless match? reqs
-          raise DependencyError, "You provided #{@spec.name} #{@spec.version} but we need: #{reqs.join ', '}."
+          raise DependencyError, "You provided #{spec!.name} #{spec!.version} but we need: #{reqs.join ', '}."
         end
       end
 
       include Comparable
 
       def <=>(other)
-        if @spec
-          @spec.version <=> Gem::Version.create(other)
-        else
-          # you'd otherwise get an unhelpful error message:
-          # ArgumentError: comparison of ActiveAdmin::Dependency::Matcher with 2 failed
-          raise DependencyError, "To use #{@name} you need to specify it in your Gemfile."
-        end
+        spec!.version <=> Gem::Version.create(other)
       end
 
       def inspect
-        info = @spec ? "#{@spec.name} #{@spec.version}" : '(missing)'
+        info = spec ? "#{spec.name} #{spec.version}" : '(missing)'
         "<ActiveAdmin::Dependency::Matcher for #{info}>"
       end
+
+      def adapter
+        @adapter ||= Adapter.const_get(@name.camelize).new self
+      end
+
+      def method_missing(method, *args, &block)
+        if respond_to_missing?(method)
+          adapter.send method, *args, &block
+        else
+          super
+        end
+      end
+
+      def respond_to_missing?(method, include_private = false)
+        adapter.respond_to?(method) || super
+      rescue NameError
+        # 🐾
+      end
     end
+
+    # Dependency adapters provide an easy way to wrap the conditional logic
+    # necessary to support multiple versions of a gem.
+    #
+    # ActiveAdmin::Dependency.rails.adapter.parameterize 'a b'
+    # => 'a_b'
+    #
+    # ActiveAdmin::Dependency.rails.parameterize 'a b'
+    # => 'a_b'
+    #
+    # ActiveAdmin::Dependency.devise.adapter
+    # -> NameError: uninitialized constant ActiveAdmin::Dependency::Adapter::Devise
+    #
+    module Adapter
+      class Base
+        def initialize(version)
+          @version = version
+        end
+      end
+
+      class Rails < Base
+        def strong_parameters?
+          @version >= 4 || defined?(ActionController::StrongParameters)
+        end
+
+        def parameterize(string)
+          if Dependency.rails5?
+            string.parameterize separator: '_'
+          else
+            string.parameterize '_'
+          end
+        end
+
+        def redirect_back(controller, fallback_location)
+          controller.instance_exec do
+            if Dependency.rails5?
+              redirect_back fallback_location: fallback_location
+            elsif controller.request.headers.key? 'HTTP_REFERER'
+              redirect_to :back
+            else
+              redirect_to fallback_location
+            end
+          end
+        end
+
+        def render_key
+          Dependency.rails5? ? :body : :text
+        end
+      end
+    end
+
   end
 end

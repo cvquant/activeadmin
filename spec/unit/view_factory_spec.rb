@@ -6,7 +6,7 @@ def it_should_have_view(key, value)
   end
 end
 
-describe ActiveAdmin::ViewFactory do
+RSpec.describe ActiveAdmin::ViewFactory do
 
   it_should_have_view :global_navigation,    ActiveAdmin::Views::TabbedNavigation
   it_should_have_view :utility_navigation,   ActiveAdmin::Views::TabbedNavigation
@@ -14,8 +14,6 @@ describe ActiveAdmin::ViewFactory do
   it_should_have_view :action_items,         ActiveAdmin::Views::ActionItems
   it_should_have_view :header,               ActiveAdmin::Views::Header
   it_should_have_view :blank_slate,          ActiveAdmin::Views::BlankSlate
-  it_should_have_view :action_list_popover,  ActiveAdmin::Views::ActionListPopover
-
   it_should_have_view :layout,               ActiveAdmin::Views::Pages::Layout
 
 end

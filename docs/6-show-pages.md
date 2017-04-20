@@ -1,3 +1,6 @@
+---
+redirect_from: /docs/6-show-pages.html
+---
 # Customize the Show Page
 
 The show block is rendered within the context of the view and uses [Arbre](https://github.com/activeadmin/arbre) syntax.
@@ -21,7 +24,7 @@ You can render a partial at any point:
 ActiveAdmin.register Post do
   show do
     # renders app/views/admin/posts/_some_partial.html.erb
-    render 'some_partial'
+    render 'some_partial', { post: post }
   end
 end
 ```
@@ -33,7 +36,7 @@ ActiveAdmin.register Ad do
   show do
     attributes_table do
       row :title
-      row :image do
+      row :image do |ad|
         image_tag ad.image.url
       end
     end
@@ -78,7 +81,7 @@ end
 
 # Tabs
 
-You can arrage content in tabs as shown below:
+You can arrange content in tabs as shown below:
 
 ```ruby
   ActiveAdmin.register Order do 
@@ -93,10 +96,10 @@ You can arrage content in tabs as shown below:
         
         tab 'Payments' do
           table_for order.payments do
-            column('Payment Type') { |p| payment.payment_type.titleize }
+            column('Payment Type') { |p| p.payment_type.titleize }
             column('Received On', :created_at)
             column('Payment Details & Notes', :notes)
-            column('Amount') { |p| number_to_currency(payment.amount_in_dollars) }
+            column('Amount') { |p| number_to_currency(p.amount_in_dollars) }
           end
         end
       end

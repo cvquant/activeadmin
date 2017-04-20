@@ -15,7 +15,7 @@ module ActiveAdmin
       end
 
       # We don't want to wrap the action list (or any other children) in
-      # an unecessary div, so instead we just return the children
+      # an unnecessary div, so instead we just return the children
       def to_s
         children.to_s
       end
@@ -23,6 +23,7 @@ module ActiveAdmin
       private
 
       def build_drop_down
+        return if batch_actions_to_display.empty?
         dropdown_menu I18n.t("active_admin.batch_actions.button_label"),
                       class: "batch_actions_selector dropdown_menu",
                       button: { class: "disabled" } do
@@ -33,7 +34,7 @@ module ActiveAdmin
               :class         => "batch_action",
               "data-action"  => batch_action.sym,
               "data-confirm" => confirmation_text,
-              "data-inputs"  => batch_action.inputs.to_json
+              "data-inputs"  => render_in_context(self, batch_action.inputs).to_json
             }
 
             default_title = render_or_call_method_or_proc_on(self, batch_action.title)

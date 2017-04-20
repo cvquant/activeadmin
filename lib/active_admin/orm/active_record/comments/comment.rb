@@ -16,7 +16,7 @@ module ActiveAdmin
 
     # @return [String] The name of the record to use for the polymorphic relationship
     def self.resource_type(resource)
-      ResourceController::Decorators.undecorate(resource).class.name.to_s
+      ResourceController::Decorators.undecorate(resource).class.base_class.name.to_s
     end
 
     # Postgres adapters won't compare strings to numbers (issue 34)
@@ -29,7 +29,7 @@ module ActiveAdmin
         resource_type: resource_type(resource),
         resource_id:   resource_id_cast(resource),
         namespace:     namespace.to_s
-      ).order('created_at ASC')
+      ).order(ActiveAdmin.application.namespaces[namespace.to_sym].comments_order)
     end
 
     def self.resource_id_type

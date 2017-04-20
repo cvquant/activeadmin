@@ -5,8 +5,9 @@ require 'active_admin/orm/active_record/comments/resource_helper'
 
 # Add the comments configuration
 ActiveAdmin::Application.inheritable_setting :comments,                   true
-ActiveAdmin::Application.inheritable_setting :show_comments_in_menu,      true
 ActiveAdmin::Application.inheritable_setting :comments_registration_name, 'Comment'
+ActiveAdmin::Application.inheritable_setting :comments_order,             "created_at ASC"
+ActiveAdmin::Application.inheritable_setting :comments_menu,              {}
 
 # Insert helper modules
 ActiveAdmin::Namespace.send :include, ActiveAdmin::Comments::NamespaceHelper
@@ -18,11 +19,11 @@ ActiveAdmin.autoload :Comment, 'active_admin/orm/active_record/comments/comment'
 
 # Walk through all the loaded namespaces after they're loaded
 ActiveAdmin.after_load do |app|
-  app.namespaces.values.each do |namespace|
+  app.namespaces.each do |namespace|
     namespace.register ActiveAdmin::Comment, as: namespace.comments_registration_name do
-      actions :index, :show, :create
+      actions :index, :show, :create, :destroy
 
-      menu false unless namespace.comments && namespace.show_comments_in_menu
+      menu namespace.comments ? namespace.comments_menu : false
 
       config.comments      = false # Don't allow comments on comments
       config.batch_actions = false # The default destroy batch action isn't showing up anyway...
@@ -30,7 +31,7 @@ ActiveAdmin.after_load do |app|
       scope :all, show_count: false
       # Register a scope for every namespace that exists.
       # The current namespace will be the default scope.
-      app.namespaces.values.map(&:name).each do |name|
+      app.namespaces.map(&:name).each do |name|
         scope name, default: namespace.name == name do |scope|
           scope.where namespace: name.to_s
         end
@@ -54,17 +55,29 @@ ActiveAdmin.after_load do |app|
         # Redirect to the resource show page after comment creation
         def create
           create! do |success, failure|
-            success.html{ redirect_to :back }
+            success.html do
+              ActiveAdmin::Dependency.rails.redirect_back self, active_admin_root
+            end
             failure.html do
               flash[:error] = I18n.t 'active_admin.comments.errors.empty_text'
-              redirect_to :back
+              ActiveAdmin::Dependency.rails.redirect_back self, active_admin_root
+            end
+          end
+
+          def destroy
+            destroy! do |success, failure|
+              success.html do
+                ActiveAdmin::Dependency.rails.redirect_back self, active_admin_root
+              end
+              failure.html do
+                ActiveAdmin::Dependency.rails.redirect_back self, active_admin_root
+              end
             end
           end
         end
       end
 
-      # Set up permitted params in case the app is using Strong Parameters
-      unless Rails::VERSION::MAJOR == 3 && !defined? StrongParameters
+      if ActiveAdmin::Dependency.rails.strong_parameters?
         permit_params :body, :namespace, :resource_id, :resource_type
       end
 
@@ -74,6 +87,7 @@ ActiveAdmin.after_load do |app|
         column I18n.t('active_admin.comments.resource'),      :resource
         column I18n.t('active_admin.comments.author'),        :author
         column I18n.t('active_admin.comments.body'),          :body
+        column I18n.t('active_admin.comments.created_at'),    :created_at
         actions
       end
     end

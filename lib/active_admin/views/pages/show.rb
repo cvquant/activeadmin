@@ -25,7 +25,8 @@ module ActiveAdmin
         end
 
         def attributes_table(*args, &block)
-          panel(I18n.t('active_admin.details', model: active_admin_config.resource_label)) do
+          table_title = ActiveAdmin::Localizers.resource(active_admin_config).t(:details)
+          panel(table_title) do
             attributes_table_for resource, *args, &block
           end
         end
@@ -35,7 +36,7 @@ module ActiveAdmin
         def default_title
           title = display_name(resource)
 
-          if title.nil? || title.empty? || title == resource.to_s
+          if title.blank?
             title = "#{active_admin_config.resource_label} ##{resource.id}"
           end
 

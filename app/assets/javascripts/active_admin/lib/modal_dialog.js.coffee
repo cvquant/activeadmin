@@ -1,7 +1,7 @@
 ActiveAdmin.modal_dialog = (message, inputs, callback)->
   html = """<form id="dialog_confirm" title="#{message}"><ul>"""
   for name, type of inputs
-    if /^(datepicker|checkbox|text)$/.test type
+    if /^(datepicker|checkbox|text|number)$/.test type
       wrapper = 'input'
     else if type is 'textarea'
       wrapper = 'textarea'
@@ -16,18 +16,26 @@ ActiveAdmin.modal_dialog = (message, inputs, callback)->
       <#{wrapper} name="#{name}" class="#{klass}" type="#{type}">""" +
         (if opts then (
           for v in opts
+            $elem = $("<#{elem}/>")
             if $.isArray v
-              "<#{elem} value=#{v[1]}>#{v[0]}</#{elem}>"
+              $elem.text(v[0]).val(v[1])
             else
-              "<#{elem}>#{v}</#{elem}>"
+              $elem.text(v)
+            $elem.wrap('<div>').parent().html()
         ).join '' else '') +
       "</#{wrapper}>" +
     "</li>"
     [wrapper, elem, opts, type, klass] = [] # unset any temporary variables
 
   html += "</ul></form>"
-  $(html).appendTo('body').dialog
+
+  form = $(html).appendTo('body')
+  $('body').trigger 'modal_dialog:before_open', [form]
+
+  form.dialog
     modal: true
+    open: (event, ui) ->
+      $('body').trigger 'modal_dialog:after_open', [form]
     dialogClass: 'active_admin_dialog'
     buttons:
       OK: ->

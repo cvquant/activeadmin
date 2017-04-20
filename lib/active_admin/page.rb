@@ -1,7 +1,7 @@
 module ActiveAdmin
   # Page is the primary data storage for page configuration in Active Admin
   #
-  # When you register a page (ActiveAdmin.page "Status") you are actually creating
+  # When you register a page (ActiveAdmin.register_page "Status") you are actually creating
   # a new Page instance within the given Namespace.
   #
   # The instance of the current page is available in PageController and views
@@ -73,10 +73,6 @@ module ActiveAdmin
       false
     end
 
-    def belongs_to?
-      false
-    end
-
     def add_default_action_items
     end
 
@@ -88,5 +84,23 @@ module ActiveAdmin
       @page_actions = []
     end
 
+    def belongs_to(target, options = {})
+      @belongs_to = Resource::BelongsTo.new(self, target, options)
+      self.navigation_menu_name = target unless @belongs_to.optional?
+      controller.send :belongs_to, target, options.dup
+    end
+
+    def belongs_to_config
+      @belongs_to
+    end
+
+    # Do we belong to another resource?
+    def belongs_to?
+      !!belongs_to_config
+    end
+
+    def breadcrumb
+      instance_variable_defined?(:@breadcrumb) ? @breadcrumb : namespace.breadcrumb
+    end
   end
 end
