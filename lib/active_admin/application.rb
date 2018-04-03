@@ -89,6 +89,10 @@ module ActiveAdmin
     # Display breadcrumbs
     inheritable_setting :breadcrumb, true
 
+    # Display create another checkbox on a new page
+    # @return [Boolean] (true)
+    inheritable_setting :create_another, false
+
     # Default CSV options
     inheritable_setting :csv_options, { col_sep: ',', byte_order_mark: "\xEF\xBB\xBF" }
 
@@ -109,6 +113,9 @@ module ActiveAdmin
 
     # class to handle ordering
     inheritable_setting :order_clause, ActiveAdmin::OrderClause
+
+    # default show_count for scopes
+    inheritable_setting :scopes_show_count, true
 
     # Request parameters that are permitted by default
     inheritable_setting :permitted_params, [
@@ -264,10 +271,9 @@ module ActiveAdmin
   private
 
     def register_default_assets
-      register_stylesheet 'active_admin.css',       media: 'screen'
-      register_stylesheet 'active_admin/print.css', media: 'print'
-
-      register_javascript 'active_admin.js'
+      stylesheets['active_admin.css'] = { media: 'screen' }
+      stylesheets['active_admin/print.css'] = { media: 'print' }
+      javascripts.add 'active_admin.js'
     end
 
     # Since app/admin is alphabetically before app/models, we have to remove it

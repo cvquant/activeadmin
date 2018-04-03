@@ -71,19 +71,14 @@ module ActiveAdmin
           build_pagination
           div(page_entries_info(options).html_safe, class: "pagination_information")
 
-          download_links = @download_links.is_a?(Proc) ? instance_exec(&@download_links) : @download_links
-
-          if download_links.is_a?(Array) && !download_links.empty?
-            build_download_format_links download_links
-          else
-            build_download_format_links unless download_links == false
-          end
+          formats = build_download_formats @download_links
+          build_download_format_links formats if formats.any?
         end
       end
 
       def build_per_page_select
         div class: "pagination_per_page" do
-          text_node "Per page:"
+          text_node I18n.t("active_admin.pagination.per_page")
           select do
             @per_page.each do |per_page|
               option(
@@ -97,7 +92,7 @@ module ActiveAdmin
       end
 
       def build_pagination
-        options = {}
+        options = { theme: 'active_admin' }
         options[:params]     = @params     if @params
         options[:param_name] = @param_name if @param_name
 

@@ -7,7 +7,7 @@ module ActiveAdmin
       let(:application) { ActiveAdmin::Application.new }
       let(:namespace) { ActiveAdmin::Namespace.new application, :admin }
       let(:resource_config) { ActiveAdmin::Resource.new namespace, Post }
-      let(:dsl){ ActiveAdmin::ResourceDSL.new(resource_config, Post) }
+      let(:dsl){ ActiveAdmin::ResourceDSL.new(resource_config) }
 
       it "should register the ordering in the config" do
         dsl.run_registration_block do
@@ -19,7 +19,6 @@ module ActiveAdmin
         end
         expect(resource_config.ordering.size).to eq(1)
       end
-
 
       it "should allow to setup custom ordering class" do
         MyOrderClause = Class.new(ActiveAdmin::OrderClause)
@@ -34,5 +33,3 @@ module ActiveAdmin
     end
   end
 end
-
-

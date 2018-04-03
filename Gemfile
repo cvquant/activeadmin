@@ -1,47 +1,55 @@
 source 'https://rubygems.org'
 
+# Trick to use https without warnings and without having to specify full URLs
+# TODO: Can be removed when Bundler 2.x is released.
+git_source(:github) do |repo_name|
+  repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+  "https://github.com/#{repo_name}.git"
+end
+
 # Optional dependencies
 gem 'cancan'
 gem 'pundit'
 
-# Until https://github.com/erikhuda/thor/issues/538 fixed
-gem 'thor', '<= 0.19.1'
-
 # Utility gems used in both development & test environments
 gem 'rake'
-gem 'parallel_tests', '< 2.10' #2.10 requires ruby '>= 2.0.0'
+gem 'parallel_tests'
 
 # Debugging
-gem 'pry'                                   # Easily debug from your console with `binding.pry`
+gem 'pry' # Easily debug from your console with `binding.pry`
+
+# Code style
+gem 'rubocop', '0.49.1'
+gem 'mdl', '0.4.0'
+
+# Translations
+gem 'i18n-tasks'
+
+# Documentation
+gem 'yard'                        # Documentation generator
+gem 'redcarpet', platforms: :mri  # Markdown implementation (for yard)
+gem 'kramdown', platforms: :jruby # Markdown implementation (for yard)
 
 group :development do
   # Debugging
-  gem 'better_errors',                      # Web UI to debug exceptions. Go to /__better_errors to access the latest one
-      platforms: [:ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24]
+  gem 'better_errors' # Web UI to debug exceptions. Go to /__better_errors to access the latest one
 
-  gem 'binding_of_caller', platforms: :mri  # Retrieve the binding of a method's caller in MRI Ruby >= 1.9.2
+  gem 'binding_of_caller', platforms: :mri # Retrieve the binding of a method's caller
 
   # Performance
-  gem 'rack-mini-profiler'                  # Inline app profiler. See ?pp=help for options.
-
-  # Documentation
-  gem 'yard'                                # Documentation generator
-  gem 'redcarpet', platforms: :mri          # Markdown implementation (for yard)
-  gem 'kramdown', platforms: :jruby         # Markdown implementation (for yard)
-  gem 'appraisal', require: false
+  gem 'rack-mini-profiler' # Inline app profiler. See ?pp=help for options.
 end
 
 group :test do
   gem 'capybara'
-  gem 'simplecov', require: false           # Test coverage generator. Go to /coverage/ after running tests
-  gem 'codecov', require: false             # Test coverage website. Go to https://codecov.io
+  gem 'simplecov', require: false # Test coverage generator. Go to /coverage/ after running tests
+  gem 'codecov', require: false # Test coverage website. Go to https://codecov.io
   gem 'cucumber-rails', require: false
-  gem 'cucumber', '1.3.20'
+  gem 'cucumber'
   gem 'database_cleaner'
   gem 'jasmine'
-  gem 'jslint_on_rails'
   gem 'launchy'
-  gem 'rails-i18n'                          # Provides default i18n for many languages
+  gem 'rails-i18n' # Provides default i18n for many languages
   gem 'rspec-rails'
   gem 'i18n-spec'
   gem 'shoulda-matchers', '<= 2.8.0'

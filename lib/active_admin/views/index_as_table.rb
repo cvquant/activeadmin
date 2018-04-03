@@ -159,6 +159,24 @@ module ActiveAdmin
     # end
     # ```
     #
+    # ## Custom sorting
+    #
+    # It is also possible to use database specific expressions and options for sorting by column
+    #
+    # ```ruby
+    # order_by(:title) do |order_clause|
+    #    if order_clause.order == 'desc'
+    #      [order_clause.to_sql, 'NULLS LAST'].join(' ')
+    #    else
+    #      [order_clause.to_sql, 'NULLS FIRST'].join(' ')
+    #    end
+    # end
+    #
+    # index do
+    #   column :title
+    # end
+    # ```
+    #
     # ## Associated Sorting
     #
     # You're normally able to sort columns alphabetically, but by default you
@@ -233,8 +251,8 @@ module ActiveAdmin
         proc do
           selectable_column
           id_column if resource_class.primary_key
-          resource_class.content_columns.each do |col|
-            column col.name.to_sym
+          active_admin_config.resource_columns.each do |attribute|
+            column attribute
           end
           actions
         end
@@ -368,6 +386,6 @@ module ActiveAdmin
         end
       end # IndexTableFor
 
-    end # IndexAsTable
+    end
   end
 end

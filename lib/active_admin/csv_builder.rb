@@ -22,7 +22,7 @@ module ActiveAdmin
     def self.default_for_resource(resource)
       new resource: resource do
         column :id
-        resource.content_columns.each { |c| column c.name.to_sym }
+        resource.content_columns.each { |c| column c }
       end
     end
 
@@ -30,12 +30,12 @@ module ActiveAdmin
 
     COLUMN_TRANSITIVE_OPTIONS = [:humanize_name].freeze
 
-    def initialize(options={}, &block)
+    def initialize(options = {}, &block)
       @resource = options.delete(:resource)
       @columns, @options, @block = [], options, block
     end
 
-    def column(name, options={}, &block)
+    def column(name, options = {}, &block)
       @columns << Column.new(name, @resource, column_transitive_options.merge(options), block)
     end
 
@@ -45,7 +45,7 @@ module ActiveAdmin
       options      = ActiveAdmin.application.csv_options.merge self.options
       bom          = options.delete :byte_order_mark
       column_names = options.delete(:column_names) { true }
-      csv_options  = options.except :encoding_options
+      csv_options  = options.except :encoding_options, :humanize_name
 
       csv << bom if bom
 
@@ -105,7 +105,7 @@ module ActiveAdmin
 
       def humanize_name(name, resource, humanize_name_option)
         if humanize_name_option
-          name.is_a?(Symbol) && resource.present? ? resource.human_attribute_name(name) : name.to_s.humanize
+          name.is_a?(Symbol) && resource ? resource.resource_class.human_attribute_name(name) : name.to_s.humanize
         else
           name.to_s
         end

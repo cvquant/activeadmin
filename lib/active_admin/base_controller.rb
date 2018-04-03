@@ -10,13 +10,8 @@ module ActiveAdmin
 
     layout :determine_active_admin_layout
 
-    if ActiveAdmin::Dependency.rails >= 4
-      before_action :only_render_implemented_actions
-      before_action :authenticate_active_admin_user
-    else
-      before_filter :only_render_implemented_actions
-      before_filter :authenticate_active_admin_user
-    end
+    before_action :only_render_implemented_actions
+    before_action :authenticate_active_admin_user
 
     class << self
       # Ensure that this method is available for the DSL
@@ -34,8 +29,8 @@ module ActiveAdmin
       raise AbstractController::ActionNotFound unless action_methods.include?(params[:action])
     end
 
-    include Menu
     include Authorization
+    include Menu
 
     private
 
@@ -63,7 +58,6 @@ module ActiveAdmin
       active_admin_config.namespace
     end
     helper_method :active_admin_namespace
-
 
     ACTIVE_ADMIN_ACTIONS = [:index, :show, :new, :create, :edit, :update, :destroy]
 

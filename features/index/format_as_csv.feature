@@ -12,8 +12,8 @@ Feature: Format as CSV
     When I am on the index page for posts
     And I follow "CSV"
     And I should download a CSV file for "posts" containing:
-    | Id  | Title       | Body | Published date | Position | Starred | Created at | Updated at |
-    | \d+ | Hello World |      |              |          |         | (.*)       | (.*)       |
+    | Id  | Title       | Body | Published date | Position | Starred | Foo    |Created at | Updated at |
+    | \d+ | Hello World |      |                |          |         |        |(.*)       | (.*)       |
 
   Scenario: Default with alias
     Given a configuration of:
@@ -24,7 +24,7 @@ Feature: Format as CSV
     When I am on the index page for my_articles
     And I follow "CSV"
     And I should download a CSV file for "my-articles" containing:
-    | Id  | Title       | Body | Published date | Position | Starred | Created at | Updated at |
+    | Id  | Title       | Body | Published date | Position | Starred | Foo    | Created at | Updated at |
 
   Scenario: With CSV format customization
     Given a configuration of:
@@ -61,6 +61,23 @@ Feature: Format as CSV
       | Title        | Body |
       | Hello, World | (.*) |
 
+  Scenario: With humanize_name option
+    Given a configuration of:
+    """
+      ActiveAdmin.register Post do
+        csv humanize_name: false do
+          column :title
+          column :body
+        end
+      end
+    """
+    And a post with the title "Hello, World" exists
+    When I am on the index page for posts
+    And I follow "CSV"
+    And I should download a CSV file with "," separator for "posts" containing:
+      | title | body |
+      | Hello, World | (.*) |
+    
   Scenario: With CSV option customization
     Given a configuration of:
     """
